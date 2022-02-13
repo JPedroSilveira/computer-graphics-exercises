@@ -45,7 +45,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window;
-    window = glfwCreateWindow(1000, 1000, "INF01047 - 00303397 - João Pedro Silveira e Silva", NULL, NULL);
+    window = glfwCreateWindow(1000, 1000, "INF01047 - 00303397 - PUTOJoão Pedro Silveira e Silva", NULL, NULL);
     if (!window)
     {
         glfwTerminate();

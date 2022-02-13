@@ -8,4 +8,4 @@ Features:
 Execution:
 
 - Select the feature and rename it to "main.cpp"
-- Execute: make && make run
+- Execute: make run
