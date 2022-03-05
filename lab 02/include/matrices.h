@@ -234,20 +234,33 @@ float dotproduct(glm::vec4 u, glm::vec4 v)
     return u1*v1 + u2*v2 + u3*v3 /* PREENCHA AQUI o que falta para definir o produto escalar */;
 }
 
-// Matriz de mudança de coordenadas para o sistema de coordenadas da Câmera.
-glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
+glm::vec4 Calculate_W_Vector(glm::vec4 view_vector) 
 {
     glm::vec4 w = view_vector / norm(view_vector) /* PREENCHA AQUI o cálculo do vetor w */;
     w.x = w.x * -1;
     w.y = w.y * -1;
     w.z = w.z * -1;
 
-    glm::vec4 up_w_product = crossproduct(up_vector, w);
-    glm::vec4 u = up_w_product / norm(up_w_product) /* PREENCHA AQUI o cálculo do vetor u */;
-
-    // Normalizamos os vetores u e w
     w = w / norm(w);
+
+    return w;
+}
+
+glm::vec4 Calculate_U_Vector(glm::vec4 up_vector, glm::vec4 w_vector) {
+    glm::vec4 up_w_product = crossproduct(up_vector, w_vector);
+    glm::vec4 u = up_w_product / norm(up_w_product) /* PREENCHA AQUI o cálculo do vetor u */;
+    
     u = u / norm(u);
+
+    return u;
+}
+
+// Matriz de mudança de coordenadas para o sistema de coordenadas da Câmera.
+glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
+{
+    glm::vec4 w = Calculate_W_Vector(view_vector);
+
+    glm::vec4 u = Calculate_U_Vector(up_vector, w);
 
     glm::vec4 v = crossproduct(w,u);
 
