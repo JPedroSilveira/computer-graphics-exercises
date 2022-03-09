@@ -123,6 +123,7 @@ bool g_ShowInfoText = true;
 // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
 // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
 glm::vec4 camera_position_c  = glm::vec4(-1.0f,0.0f,-1.0f,1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_lookat_l = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
 glm::vec4 camera_view_vector = glm::vec4(0.0f,0.0f,0.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
@@ -1089,11 +1090,9 @@ void KeyPress(int key, int mod) {
         if (key == GLFW_KEY_A) {
             u.x *= -1;
             u.z *= -1;
-            u.y *= -1;
         }
         camera_position_c.x += u.x * SPEED;
         camera_position_c.z += u.z * SPEED;
-        camera_position_c.y += u.y * SPEED;
     }
 
     if (key == GLFW_KEY_W || key == GLFW_KEY_S) {
@@ -1101,11 +1100,9 @@ void KeyPress(int key, int mod) {
         if (key == GLFW_KEY_W) {
             w.x *= -1;
             w.z *= -1;
-            w.y *= -1;
         }
         camera_position_c.x += w.x * SPEED;
         camera_position_c.z += w.z * SPEED;
-        camera_position_c.y += w.y * SPEED;
     }
 }
 
