@@ -75,6 +75,7 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void KeyPress(int key, int mod);
+void KeyRelease(int key);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -120,13 +121,14 @@ bool g_UsePerspectiveProjection = true;
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
 
-// Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-// Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-glm::vec4 camera_position_c  = glm::vec4(-1.0f,0.0f,-1.0f,1.0f); // Ponto "c", centro da câmera
-glm::vec4 camera_view_vector = glm::vec4(0.0f,0.0f,0.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
-glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+// Control moviment speed
+float SPEED = 0.02;
 
-float SPEED = 0.05;
+// Control moviment direction
+bool should_move_front = false;
+bool should_move_back = false;
+bool should_move_right = false;
+bool should_move_left = false;
 
 int main()
 {
@@ -248,6 +250,13 @@ int main()
     glm::mat4 the_model;
     glm::mat4 the_view;
 
+    // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
+    // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+    glm::vec4 camera_position_c  = glm::vec4(-1.0f,0.0f,-1.0f,1.0f); // Ponto "c", centro da câmera
+    glm::vec4 camera_freeview_l = glm::vec4(0.0f,1.0f,0.0f,1.0f); // Ponto "l", frente da câmera;
+    glm::vec4 camera_view_vector = glm::vec4(0.0f,0.0f,0.0f,0.0f); // Vetor "view", sentido para onde a câmera está virada
+    glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -274,6 +283,19 @@ int main()
         // comentários detalhados dentro da definição de BuildTriangles().
         glBindVertexArray(vertex_array_object_id);
 
+        // Adiciona o movimento de necessário
+        if (should_move_left) {
+            glm::vec4 u_vector = Calculate_U_Vector(camera_up_vector, camera_view_vector);
+            camera_position_c += u_vector * SPEED;
+        } else if (should_move_right) {
+            glm::vec4 u_vector = Calculate_U_Vector(camera_up_vector, camera_view_vector);
+            camera_position_c -= u_vector * SPEED;
+        } else if (should_move_back) {
+            camera_position_c -= camera_view_vector * SPEED;
+        } else if (should_move_front) {
+            camera_position_c += camera_view_vector * SPEED;
+        }
+
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
@@ -286,7 +308,7 @@ int main()
         camera_view_vector.x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
         camera_view_vector.y = r*sin(g_CameraPhi);
         camera_view_vector.z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-
+        
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
@@ -1029,6 +1051,20 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         } else {
             KeyPress(key, mod);
         }
+    } else if (action == GLFW_RELEASE) {
+        KeyRelease(key);
+    }
+}
+
+void KeyRelease(int key) {
+    if (key == GLFW_KEY_A) {
+        should_move_left = false;
+    } else if (key == GLFW_KEY_D) {
+        should_move_right = false;
+    } else if (key == GLFW_KEY_W) {
+        should_move_front = false;
+    } else if (key == GLFW_KEY_S) {
+        should_move_back = false;
     }
 }
 
@@ -1043,69 +1079,34 @@ void KeyPress(int key, int mod) {
 
     float delta = 3.141592 / 16; // 22.5 graus, em radianos.
 
-    if (key == GLFW_KEY_X)
-    {
+    if (key == GLFW_KEY_X) {
         g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y)
-    {
+    } else if (key == GLFW_KEY_Y) {
         g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z)
-    {
+    } else if (key == GLFW_KEY_Z) {
         g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
-    if (key == GLFW_KEY_SPACE)
-    {
+    } else if (key == GLFW_KEY_SPACE) {
+        // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
         g_AngleX = 0.0f;
         g_AngleY = 0.0f;
         g_AngleZ = 0.0f;
-    }
-
-    // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
-    if (key == GLFW_KEY_P)
-    {
+    } else if (key == GLFW_KEY_P) {
+        // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
         g_UsePerspectiveProjection = true;
-    }
-
-    // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
-    if (key == GLFW_KEY_O)
-    {
+    } else if (key == GLFW_KEY_O) {
+        // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
         g_UsePerspectiveProjection = false;
-    }
-
-    // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
-    if (key == GLFW_KEY_H)
-    {
+    } else if (key == GLFW_KEY_H) {
+        // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
         g_ShowInfoText = !g_ShowInfoText;
-    }
-
-    if (key == GLFW_KEY_A || key == GLFW_KEY_D) {
-        glm::vec4 w = Calculate_W_Vector(camera_view_vector);
-        glm::vec4 u = Calculate_U_Vector(camera_up_vector, w);
-        if (key == GLFW_KEY_A) {
-            u.x *= -1;
-            u.z *= -1;
-            u.y *= -1;
-        }
-        camera_position_c.x += u.x * SPEED;
-        camera_position_c.z += u.z * SPEED;
-        camera_position_c.y += u.y * SPEED;
-    }
-
-    if (key == GLFW_KEY_W || key == GLFW_KEY_S) {
-        glm::vec4 w = Calculate_W_Vector(camera_view_vector);
-        if (key == GLFW_KEY_W) {
-            w.x *= -1;
-            w.z *= -1;
-            w.y *= -1;
-        }
-        camera_position_c.x += w.x * SPEED;
-        camera_position_c.z += w.z * SPEED;
-        camera_position_c.y += w.y * SPEED;
+    } else if (key == GLFW_KEY_A) {
+        should_move_left = true;
+    } else if (key == GLFW_KEY_D) {
+        should_move_right = true;
+    } else if (key == GLFW_KEY_W) {
+        should_move_front = true;
+    } else if (key == GLFW_KEY_S) {
+        should_move_back = true;
     }
 }
 
