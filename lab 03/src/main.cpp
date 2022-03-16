@@ -81,6 +81,17 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+// Transformações de Movimento
+glm::mat4 GetArmTransformation();
+glm::mat4 GetForearmTransformation();
+
+// Desenho de corpo
+void DrawHand(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+void DrawArm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight);
+void DrawTrunk(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+void DrawHead(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -361,47 +372,11 @@ int main()
 
         // Translação inicial do torso
         model = model * Matrix_Translate(g_TorsoPositionX - 1.0f, g_TorsoPositionY + 1.0f, 0.0f);
-        // Guardamos matriz model atual na pilha
-        PushMatrix(model);
-            // Atualizamos a matriz model (multiplicação à direita) para fazer um escalamento do torso
-            model = model * Matrix_Scale(0.8f, 1.0f, 0.2f);
-            // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
-            // arquivo "shader_vertex.glsl", onde esta é efetivamente
-            // aplicada em todos os pontos.
-            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            // Desenhamos um cubo. Esta renderização irá executar o Vertex
-            // Shader definido no arquivo "shader_vertex.glsl", e o mesmo irá
-            // utilizar as matrizes "model", "view" e "projection" definidas
-            // acima e já enviadas para a placa de vídeo (GPU).
-            DrawCube(render_as_black_uniform); // #### TORSO
-        // Tiramos da pilha a matriz model guardada anteriormente
-        PopMatrix(model);
 
-        PushMatrix(model); // Guardamos matriz model atual na pilha
-            model = model * Matrix_Translate(-0.55f, 0.0f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço direito
-            PushMatrix(model); // Guardamos matriz model atual na pilha
-                model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do braço direito
-                      * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
-                      * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
-                      * Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
-                PushMatrix(model); // Guardamos matriz model atual na pilha
-                    model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço direito
-                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-                    DrawCube(render_as_black_uniform); // #### BRAÇO DIREITO // Desenhamos o braço direito
-                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-                PushMatrix(model); // Guardamos matriz model atual na pilha
-                    model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço direito
-                    model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço direito
-                          * Matrix_Rotate_Z(g_ForearmAngleZ)  // SEGUNDO rotação Z de Euler
-                          * Matrix_Rotate_X(g_ForearmAngleX); // PRIMEIRO rotação X de Euler
-                    PushMatrix(model); // Guardamos matriz model atual na pilha
-                        model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço direito
-                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-                        DrawCube(render_as_black_uniform); // #### ANTEBRAÇO DIREITO // Desenhamos o antebraço direito
-                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        DrawTrunk(model, model_uniform, render_as_black_uniform);
+        DrawHead(model, model_uniform, render_as_black_uniform);
+        DrawArm(model, model_uniform, render_as_black_uniform, true);
+        DrawArm(model, model_uniform, render_as_black_uniform, false);
 
         // Neste ponto a matriz model recuperada é a matriz inicial (translação do torso)
 
@@ -1322,6 +1297,90 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     float charwidth = TextRendering_CharWidth(window);
 
     TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
+}
+
+glm::mat4 GetArmTransformation() {
+    // Atualizamos matriz model (multiplicação à direita) com a rotação do braço
+    // PRIMEIRO rotação X de Euler, SEGUNDO rotação Y de Euler, TERCEIRO rotação Z de Euler
+    return Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
+}
+
+glm::mat4 GetForearmTransformation() {
+    // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço
+    // PRIMEIRO rotação X de Euler, SEGUNDO rotação Z de Euler
+    return Matrix_Rotate_Z(g_ForearmAngleZ) * Matrix_Rotate_X(g_ForearmAngleX);
+}
+
+void DrawHand(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    PushMatrix(model);
+        model = model * Matrix_Translate(0.0f, -0.65f, 0.0f);
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.2f, 0.1f, 0.2f);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            DrawCube(render_as_black_uniform);
+        PopMatrix(model);
+    PopMatrix(model);
+}
+
+void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    PushMatrix(model); // Guardamos matriz model atual na pilha
+        model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço
+        model = model * GetForearmTransformation();
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+            DrawCube(render_as_black_uniform); // Desenhamos o antebraço
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        DrawHand(model, model_uniform, render_as_black_uniform);
+    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+}
+
+void DrawArm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight) {
+    PushMatrix(model); // Guardamos matriz model atual na pilha
+        float x = isRight ? -0.55 : 0.55;
+        model = model * Matrix_Translate(x, 0.0f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * GetArmTransformation();
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço
+                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                DrawCube(render_as_black_uniform); // Desenhamos o braço
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        DrawForearm(model, model_uniform, render_as_black_uniform);
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+}
+
+void DrawTrunk(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    // Guardamos matriz model atual na pilha
+    PushMatrix(model);
+        // Atualizamos a matriz model (multiplicação à direita) para fazer um escalamento do torso
+        model = model * Matrix_Scale(0.8f, 1.0f, 0.2f);
+        // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
+        // arquivo "shader_vertex.glsl", onde esta é efetivamente
+        // aplicada em todos os pontos.
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // Desenhamos um cubo. Esta renderização irá executar o Vertex
+        // Shader definido no arquivo "shader_vertex.glsl", e o mesmo irá
+        // utilizar as matrizes "model", "view" e "projection" definidas
+        // acima e já enviadas para a placa de vídeo (GPU).
+        DrawCube(render_as_black_uniform); // #### TORSO
+    // Tiramos da pilha a matriz model guardada anteriormente
+    PopMatrix(model);
+}
+
+void DrawHead(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    PushMatrix(model);
+        model = model * Matrix_Translate(0.0f, 0.3f, 0.0f);
+        PushMatrix(model);
+            model = model * GetArmTransformation();
+            PushMatrix(model); 
+                model = model * Matrix_Scale(0.3f, 0.3f, 0.3f);
+                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+                DrawCube(render_as_black_uniform);
+            PopMatrix(model);
+        PopMatrix(model);
+    PopMatrix(model);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
