@@ -82,13 +82,17 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Transformações de Movimento
-glm::mat4 GetArmTransformation();
+glm::mat4 GetHeadTransformation();
+glm::mat4 GetArmTransformation(bool isRight);
 glm::mat4 GetForearmTransformation();
 
 // Desenho de corpo
 void DrawHand(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
-void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight);
 void DrawArm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight);
+void DrawLeg(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight);
+void DrawLowerLeg(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
+void DrawFoot(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
 void DrawTrunk(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
 void DrawHead(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform);
 
@@ -377,6 +381,8 @@ int main()
         DrawHead(model, model_uniform, render_as_black_uniform);
         DrawArm(model, model_uniform, render_as_black_uniform, true);
         DrawArm(model, model_uniform, render_as_black_uniform, false);
+        DrawLeg(model, model_uniform, render_as_black_uniform, true);
+        DrawLeg(model, model_uniform, render_as_black_uniform, false);
 
         // Neste ponto a matriz model recuperada é a matriz inicial (translação do torso)
 
@@ -1299,16 +1305,22 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
 }
 
-glm::mat4 GetArmTransformation() {
+glm::mat4 GetArmTransformation(bool isRight) {
+    // Atualizamos matriz model (multiplicação à direita) com a rotação do braço
+    // PRIMEIRO rotação X de Euler, SEGUNDO rotação Y de Euler, TERCEIRO rotação Z de Euler
+    return Matrix_Rotate_Z(isRight ? g_AngleZ : -g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
+}
+
+glm::mat4 GetHeadTransformation() {
     // Atualizamos matriz model (multiplicação à direita) com a rotação do braço
     // PRIMEIRO rotação X de Euler, SEGUNDO rotação Y de Euler, TERCEIRO rotação Z de Euler
     return Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
 }
 
-glm::mat4 GetForearmTransformation() {
+glm::mat4 GetForearmTransformation(bool isRight) {
     // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço
     // PRIMEIRO rotação X de Euler, SEGUNDO rotação Z de Euler
-    return Matrix_Rotate_Z(g_ForearmAngleZ) * Matrix_Rotate_X(g_ForearmAngleX);
+    return Matrix_Rotate_Z(isRight ? g_ForearmAngleZ : -g_ForearmAngleZ) * Matrix_Rotate_X(g_ForearmAngleX);
 }
 
 void DrawHand(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
@@ -1322,10 +1334,10 @@ void DrawHand(glm::mat4& model, GLint model_uniform, GLint render_as_black_unifo
     PopMatrix(model);
 }
 
-void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+void DrawForearm(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight) {
     PushMatrix(model); // Guardamos matriz model atual na pilha
         model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço
-        model = model * GetForearmTransformation();
+        model = model * GetForearmTransformation(isRight);
         PushMatrix(model); // Guardamos matriz model atual na pilha
             model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
@@ -1340,15 +1352,55 @@ void DrawArm(glm::mat4& model, GLint model_uniform, GLint render_as_black_unifor
         float x = isRight ? -0.55 : 0.55;
         model = model * Matrix_Translate(x, 0.0f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço
         PushMatrix(model); // Guardamos matriz model atual na pilha
-            model = model * GetArmTransformation();
+            model = model * GetArmTransformation(isRight);
             PushMatrix(model); // Guardamos matriz model atual na pilha
                 model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
                 DrawCube(render_as_black_uniform); // Desenhamos o braço
             PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-        DrawForearm(model, model_uniform, render_as_black_uniform);
+        DrawForearm(model, model_uniform, render_as_black_uniform, isRight);
         PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
     PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+}
+
+void DrawLeg(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform, bool isRight) {
+    PushMatrix(model);
+        float x = isRight ? -0.2 : 0.2;
+        model = model * Matrix_Translate(x, -1.05f, 0.0f); 
+        PushMatrix(model); 
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.3f, 0.7f, 0.2f); 
+                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+                DrawCube(render_as_black_uniform); 
+            PopMatrix(model);
+            DrawLowerLeg(model, model_uniform, render_as_black_uniform);
+        PopMatrix(model);
+    PopMatrix(model);
+}
+
+void DrawLowerLeg(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    PushMatrix(model); 
+        model = model * Matrix_Translate(0.0f, -0.75f, 0.0f);
+        PushMatrix(model);
+            PushMatrix(model);
+                model = model * Matrix_Scale(0.25f, 0.7f, 0.2f);
+                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); 
+                DrawCube(render_as_black_uniform);
+            PopMatrix(model);
+            DrawFoot(model, model_uniform, render_as_black_uniform);
+        PopMatrix(model);
+    PopMatrix(model); 
+}
+
+void DrawFoot(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
+    PushMatrix(model);
+        model = model * Matrix_Translate(0.0f, -0.75f, 0.095f);
+        PushMatrix(model);
+            model = model * Matrix_Scale(0.22f, 0.1f, 0.4f);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            DrawCube(render_as_black_uniform);
+        PopMatrix(model);
+    PopMatrix(model);
 }
 
 void DrawTrunk(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
@@ -1371,9 +1423,9 @@ void DrawTrunk(glm::mat4& model, GLint model_uniform, GLint render_as_black_unif
 
 void DrawHead(glm::mat4& model, GLint model_uniform, GLint render_as_black_uniform) {
     PushMatrix(model);
-        model = model * Matrix_Translate(0.0f, 0.3f, 0.0f);
+        model = model * Matrix_Rotate_Z(3.142) * Matrix_Translate(0.0f, -0.05f, 0.0f);
         PushMatrix(model);
-            model = model * GetArmTransformation();
+            model = model * GetHeadTransformation();
             PushMatrix(model); 
                 model = model * Matrix_Scale(0.3f, 0.3f, 0.3f);
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
