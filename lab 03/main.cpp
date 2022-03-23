@@ -182,7 +182,7 @@ int main()
     // Criamos uma janela do sistema operacional, com 800 colunas e 800 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 800, "INF01047 - 00303397 - João Pedro Silveira e Silva", NULL, NULL);
+    window = glfwCreateWindow(800, 800, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
