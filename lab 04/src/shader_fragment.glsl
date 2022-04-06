@@ -46,7 +46,7 @@ void main()
     vec4 v = normalize(camera_position - p);
 
     // Vetor que define o sentido da reflexão especular ideal.
-    vec4 r = -l + 2*n*dotproduct(n, l); // PREENCHA AQUI o vetor de reflexão especular ideal
+    vec4 r = (-1 * l) + 2*n*dot(n, l); // PREENCHA AQUI o vetor de reflexão especular ideal
 
     // Parâmetros que definem as propriedades espectrais da superfície
     vec3 Kd; // Refletância difusa
@@ -96,22 +96,13 @@ void main()
     vec3 Ia = vec3(0.2, 0.2, 0.2); // PREENCHA AQUI o espectro da luz ambiente
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    float diffuse_term = dotproduct(n, l);
-    if (diffuse_term < 0.0) {
-        diffuse_term = 0.0;
-    }
-    // TODO: check how to do crossproduct and dotproduct
-    vec3 lambert_diffuse_term = crossproduct(Kd, I) * diffuse_term; // PREENCHA AQUI o termo difuso de Lambert
+    vec3 lambert_diffuse_term = cross(Kd, I) * max(0, dot(n, l)); // PREENCHA AQUI o termo difuso de Lambert
 
     // Termo ambiente
-    vec3 ambient_term = crossproduct(Ka, Ia); // PREENCHA AQUI o termo ambiente
+    vec3 ambient_term = cross(Ka, Ia); // PREENCHA AQUI o termo ambiente
 
     // Termo especular utilizando o modelo de iluminação de Phong
-    float phong_term = dotproduct(r, v);
-    if (phong_term < 0.0) {
-        phong_term = 0.0;
-    }
-    vec3 phong_specular_term  = crossproduct(Ks, I) * pow(phong_term, q); // PREENCH AQUI o termo especular de Phong
+    vec3 phong_specular_term  = cross(Ks, I) * pow(max(0, dot(r, v)), q); // PREENCH AQUI o termo especular de Phong
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
