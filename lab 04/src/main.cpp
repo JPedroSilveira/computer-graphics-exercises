@@ -557,7 +557,6 @@ void ComputeNormals(ObjModel* model)
             const glm::vec4  a = vertices[0];
             const glm::vec4  b = vertices[1];
             const glm::vec4  c = vertices[2];
-
             
             #pragma region Cálculo da normal de um triângulo
                 // PREENCHA AQUI o cálculo da normal de um triângulo cujos vértices

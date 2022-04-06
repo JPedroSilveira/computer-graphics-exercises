@@ -46,7 +46,7 @@ void main()
     vec4 v = normalize(camera_position - p);
 
     // Vetor que define o sentido da reflexão especular ideal.
-    vec4 r = vec4(0.0,0.0,0.0,0.0); // PREENCHA AQUI o vetor de reflexão especular ideal
+    vec4 r = -l + 2*n*dotproduct(n, l); // PREENCHA AQUI o vetor de reflexão especular ideal
 
     // Parâmetros que definem as propriedades espectrais da superfície
     vec3 Kd; // Refletância difusa
@@ -58,28 +58,28 @@ void main()
     {
         // PREENCHA AQUI
         // Propriedades espectrais da esfera
-        Kd = vec3(0.0,0.0,0.0);
+        Kd = vec3(0.8,0.4,0.08);
         Ks = vec3(0.0,0.0,0.0);
-        Ka = vec3(0.0,0.0,0.0);
+        Ka = vec3(0.4,0.2,0.04);
         q = 1.0;
     }
     else if ( object_id == BUNNY )
     {
         // PREENCHA AQUI
         // Propriedades espectrais do coelho
-        Kd = vec3(0.0,0.0,0.0);
-        Ks = vec3(0.0,0.0,0.0);
-        Ka = vec3(0.0,0.0,0.0);
-        q = 1.0;
+        Kd = vec3(0.08, 0.4, 0.8);
+        Ks = vec3(0.8, 0.8, 0.8);
+        Ka = vec3(0.04, 0.2, 0.4);
+        q = 32.0;
     }
     else if ( object_id == PLANE )
     {
         // PREENCHA AQUI
         // Propriedades espectrais do plano
-        Kd = vec3(0.0,0.0,0.0);
-        Ks = vec3(0.0,0.0,0.0);
+        Kd = vec3(0.2, 0.2, 0.2);
+        Ks = vec3(0.3, 0.3, 0.3);
         Ka = vec3(0.0,0.0,0.0);
-        q = 1.0;
+        q = 20.0;
     }
     else // Objeto desconhecido = preto
     {
@@ -90,19 +90,28 @@ void main()
     }
 
     // Espectro da fonte de iluminação
-    vec3 I = vec3(0.0,0.0,0.0); // PREENCH AQUI o espectro da fonte de luz
+    vec3 I = vec3(1.0, 1.0, 1.0); // PREENCH AQUI o espectro da fonte de luz
 
     // Espectro da luz ambiente
-    vec3 Ia = vec3(0.0,0.0,0.0); // PREENCHA AQUI o espectro da luz ambiente
+    vec3 Ia = vec3(0.2, 0.2, 0.2); // PREENCHA AQUI o espectro da luz ambiente
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    vec3 lambert_diffuse_term = vec3(0.0,0.0,0.0); // PREENCHA AQUI o termo difuso de Lambert
+    float diffuse_term = dotproduct(n, l);
+    if (diffuse_term < 0.0) {
+        diffuse_term = 0.0;
+    }
+    // TODO: check how to do crossproduct and dotproduct
+    vec3 lambert_diffuse_term = crossproduct(Kd, I) * diffuse_term; // PREENCHA AQUI o termo difuso de Lambert
 
     // Termo ambiente
-    vec3 ambient_term = vec3(0.0,0.0,0.0); // PREENCHA AQUI o termo ambiente
+    vec3 ambient_term = crossproduct(Ka, Ia); // PREENCHA AQUI o termo ambiente
 
     // Termo especular utilizando o modelo de iluminação de Phong
-    vec3 phong_specular_term  = vec3(0.0,0.0,0.0); // PREENCH AQUI o termo especular de Phong
+    float phong_term = dotproduct(r, v);
+    if (phong_term < 0.0) {
+        phong_term = 0.0;
+    }
+    vec3 phong_specular_term  = crossproduct(Ks, I) * pow(phong_term, q); // PREENCH AQUI o termo especular de Phong
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
