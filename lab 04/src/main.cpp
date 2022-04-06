@@ -557,10 +557,15 @@ void ComputeNormals(ObjModel* model)
             const glm::vec4  a = vertices[0];
             const glm::vec4  b = vertices[1];
             const glm::vec4  c = vertices[2];
+
             
-            // PREENCHA AQUI o cálculo da normal de um triângulo cujos vértices
-            // estão nos pontos "a", "b", e "c", definidos no sentido anti-horário.
-            const glm::vec4  n = glm::vec4(0.0f,0.0f,0.0f,0.0f);
+            #pragma region Cálculo da normal de um triângulo
+                // PREENCHA AQUI o cálculo da normal de um triângulo cujos vértices
+                // estão nos pontos "a", "b", e "c", definidos no sentido anti-horário.
+                const glm::vec4 v = b - a;
+                const glm::vec4 u = c - a;
+                const glm::vec4 n = crossproduct(u, v);
+            #pragma endregion
 
             for (size_t vertex = 0; vertex < 3; ++vertex)
             {
@@ -705,7 +710,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLuint), indices.data());
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
-    //
 
     // "Desligamos" o VAO, evitando assim que operações posteriores venham a
     // alterar o mesmo. Isso evita bugs.
