@@ -40,10 +40,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(0.0,-1.0,0.0));
-    vec4 lp = normalize(vec4(0.0, 2.0, 1.0));
-    vec4 ld = normalize(vec4(0.0, -1.0, 0.0));
-    float la = 0.523599;
+    vec4 l = normalize(vec4(1.0,1.0,0.5,0.0));
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
