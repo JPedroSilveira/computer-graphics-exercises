@@ -85,8 +85,17 @@ void main()
 
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
-        U = 0.0;
-        V = 0.0;
+        float rho = 1.0; // Valor arbitrário
+
+        vec4 pl = bbox_center + rho*((position_model - bbox_center)/length(position_model - bbox_center)); 
+
+        vec4 vector_p = pl - bbox_center;
+
+        float tetha = atan(vector_p.x, vector_p.z);
+        float phi = asin(vector_p.y/rho);
+
+        U = (tetha + M_PI) / (2*M_PI);
+        V = (phi + M_PI/2) / (M_PI);
     }
     else if ( object_id == BUNNY )
     {
